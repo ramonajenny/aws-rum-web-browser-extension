@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>RUM Integ Test</title>
+        <script src="./loader_ingestion.js"></script>
+        <link
+            rel="icon"
+            type="image/png"
+            href="https://awsmedia.s3.amazonaws.com/favicon.ico"
+        />
+
+        <script>
+            // Common to all test pages
+            function dispatch() {
+                cwr('dispatch');
+            }
+
+            function clearRequestResponse() {
+                document.getElementById('request_url').innerText = '';
+                document.getElementById('request_header').innerText = '';
+                document.getElementById('request_body').innerText = '';
+
+                document.getElementById('response_status').innerText = '';
+                document.getElementById('response_header').innerText = '';
+                document.getElementById('response_body').innerText = '';
+            }
+
+            // Specific to JavaScript error plugin
+            function triggerTypeError() {
+                undefined.foo();
+            }
+
+            function throwErrorString() {
+                throw 'thrown string';
+            }
+
+            function recordCaughtError() {
+                cwr('recordError', new Error('My error message'));
+            }
+
+            function disable() {
+                cwr('disable');
+            }
+
+            function enable() {
+                cwr('enable');
+            }
+
+            function httpStatFetch500() {
+                fetch('https://httpstat.us/500');
+            }
+
+            function httpStatFetch200() {
+                fetch('https://httpstat.us/200');
+            }
+
+            function httpStatXhr500() {
+                let xhr = new XMLHttpRequest();
+                xhr.open('GET', 'https://httpstat.us/500', true);
+                xhr.addEventListener('load', function (e) {
+                    console.log(xhr.response);
+                });
+                xhr.send();
+            }
+
+            function httpStatXhr200() {
+                let xhr = new XMLHttpRequest();
+                xhr.open('GET', 'https://httpstat.us/200', true);
+                xhr.addEventListener('load', function (e) {
+                    console.log(xhr.response);
+                });
+                xhr.send();
+            }
+
+            function playGame() {
+                run();
+            }
+
+            function randomUserName() {
+                return `user${Math.floor(Math.random() * 1000)}`;
+            }
+            function randomSessionName() {
+                return `session${Math.floor(Math.random() * 1000)}`;
+            }
+            function randomGameName() {
+                return `game${Math.floor(Math.random() * 1000)}`;
+            }
+            function randomGameRules() {
+                return 'TicTacToe';
+            }
+
+            async function run() {
+                let session;
+                let game;
+                const username = randomUserName();
+                const sessionname = randomSessionName();
+                const gamename = randomGameName();
+                const rules = randomGameRules();
+                const user = await createUser(username);
+                session = await createSession();
+                session = await updateSession(
+                    session.id,
+                    sessionname,
+                    username
+                );
+                game = await createGame(session.id);
+                game = await updateGame(
+                    game.id,
+                    game.session,
+                    gamename,
+                    rules,
+                    [user.id]
+                );
+                await setRules(game.id, game.session);
+                await startGame(game.id, game.session);
+                game = await getInitialState(game.id, game.session);
+                await play(session.id, game.id, user.id, 'X1');
+                await play(session.id, game.id, user.id, 'O2');
+                await play(session.id, game.id, user.id, 'X3');
+                await play(session.id, game.id, user.id, 'O4');
+                await play(session.id, game.id, user.id, 'X5');
+                await play(session.id, game.id, user.id, 'O6');
+                await play(session.id, game.id, user.id, 'X7');
+            }
+
+            async function createUser(username) {
+                const response = await fetch(
+                    'http://scorekeep-env.eba-mi3pgqai.us-west-2.elasticbeanstalk.com/api/user',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json;charset=utf-8'
+                        },
+                        body: JSON.stringify({ name: username })
+                    }
+                );
+                // Example response: {"id":"JVTUDFG6","name":"myuser"}
+                return response.json();
+            }
+
+            async function createSession() {
+                const response = await fetch(
+                    'http://scorekeep-env.eba-mi3pgqai.us-west-2.elasticbeanstalk.com/api/session',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json;charset=utf-8'
+                        },
+                        body: JSON.stringify({})
+                    }
+                );
+                // Example response: {"id":"2HM515LD","owner":null,"name":null,"users":null,"games":null}
+                return response.json();
+            }
+
+            async function updateSession(sessionId, sessionName, ownerId) {
+                const response = await fetch(
+                    `http://scorekeep-env.eba-mi3pgqai.us-west-2.elasticbeanstalk.com/api/session/${sessionId}`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json;charset=utf-8'
+                        },
+                        body: JSON.stringify({
+                            id: sessionId,
+                            owner: ownerId,
+                            name: sessionName,
+                            users: null,
+                            games: null
+                        })
+                    }
+                );
+                // Example response: {"id":"2HM515LD","owner":"JVTUDFG6","name":"games","users":null,"games":null}
+                return response.json();
+            }
+
+            async function createGame(sessionId) {
+                const response = await fetch(
+                    `http://scorekeep-env.eba-mi3pgqai.us-west-2.elasticbeanstalk.com/api/game/${sessionId}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json;charset=utf-8'
+                        },
+                        body: JSON.stringify({})
+                    }
+                );
+                // Example response: {"id":"QJ57AQDR","session":"2HM515LD","name":null,"users":null,"rules":null,"startTime":null,"endTime":null,"states":null,"moves":null}
+                return response.json();
+            }
+
+            async function updateGame(
+                gameId,
+                sessionId,
+                gameName,
+                rules,
+                users
+            ) {
+                const response = await fetch(
+                    `http://scorekeep-env.eba-mi3pgqai.us-west-2.elasticbeanstalk.com/api/game/${sessionId}/${gameId}`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json;charset=utf-8'
+                        },
+                        body: JSON.stringify({
+                            id: gameId,
+                            session: sessionId,
+                            name: gameName,
+                            users: users,
+                            rules: rules,
+                            startTime: Date.now()
+                        })
+                    }
+                );
+                // Example response: {"id":"2HM515LD","owner":"JVTUDFG6","name":"games","users":null,"games":null}
+                return response.json();
+            }
+
+            async function setRules(gameId, sessionId) {
+                const response = await fetch(
+                    `http://scorekeep-env.eba-mi3pgqai.us-west-2.elasticbeanstalk.com/api/game/${sessionId}/${gameId}/rules/TicTacToe`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json;charset=utf-8'
+                        }
+                    }
+                );
+            }
+
+            async function startGame(gameId, sessionId) {
+                const response = await fetch(
+                    `http://scorekeep-env.eba-mi3pgqai.us-west-2.elasticbeanstalk.com/api/game/${sessionId}/${gameId}/starttime/${Date.now()}`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json;charset=utf-8'
+                        }
+                    }
+                );
+            }
+
+            async function getInitialState(gameId, sessionId) {
+                const response = await fetch(
+                    `http://scorekeep-env.eba-mi3pgqai.us-west-2.elasticbeanstalk.com/api/game/${sessionId}/${gameId}`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json;charset=utf-8'
+                        }
+                    }
+                );
+                // Example response: {"id":"GC07VRGC","session":"6ROKMJ04","name":"game340","users":["2DTM9BEB"],"rules":"TicTacToe","startTime":1621296353039,"endTime":null,"states":["H6VPUAUU"],"moves":null}
+                return response.json();
+            }
+
+            async function play(sessionId, gameId, userId, move) {
+                const response = await fetch(
+                    `http://scorekeep-env.eba-mi3pgqai.us-west-2.elasticbeanstalk.com/api/move/${sessionId}/${gameId}/${userId}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json;charset=utf-8'
+                        },
+                        body: move
+                    }
+                );
+                // Example response: {"id":"HI2TEC22","game":"MHU803QE","session":"2IA03FM","user":"TECIPULQ","move":"X7"}
+                return response.json();
+            }
+        </script>
+
+        <style>
+            table {
+                border-collapse: collapse;
+                margin-top: 10px;
+                margin-bottom: 10px;
+            }
+
+            td,
+            th {
+                border: 1px solid black;
+                text-align: left;
+                padding: 8px;
+            }
+        </style>
+    </head>
+    <body>
+        <p id="welcome">This application is used for RUM integ testing.</p>
+        <hr />
+        <button id="triggerTypeError" onclick="triggerTypeError()">
+            Trigger TypeError
+        </button>
+        <button id="throwErrorString" onclick="throwErrorString()">
+            Throw error string
+        </button>
+        <button id="recordCaughtError" onclick="recordCaughtError()">
+            Record caught error
+        </button>
+        <hr />
+        <button id="httpStatFetch200" onclick="httpStatFetch200()">
+            httpstat fetch 200
+        </button>
+        <button id="httpStatFetch500" onclick="httpStatFetch500()">
+            httpstat fetch 500
+        </button>
+        <button id="httpStatXhr200" onclick="httpStatXhr200()">
+            httpstat xhr 200
+        </button>
+        <button id="httpStatXhr500" onclick="httpStatXhr500()">
+            httpstat xhr 500
+        </button>
+        <button id="playGame" onclick="playGame()">Send fetch requests</button>
+        <hr />
+        <button id="disable" onclick="disable()">Disable</button>
+        <button id="enable" onclick="enable()">Enable</button>
+        <hr />
+        <button id="dispatch" onclick="dispatch()">Dispatch</button>
+        <button id="clearRequestResponse" onclick="clearRequestResponse()">
+            Clear
+        </button>
+        <hr />
+        <span id="request"></span>
+        <span id="response"></span>
+        <table>
+            <tr>
+                <td>Request URL</td>
+                <td id="request_url"></td>
+            </tr>
+            <tr>
+                <td>Request Header</td>
+                <td id="request_header"></td>
+            </tr>
+            <tr>
+                <td>Request Body</td>
+                <td id="request_body"></td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td>Response Status Code</td>
+                <td id="response_status"></td>
+            </tr>
+            <tr>
+                <td>Response Header</td>
+                <td id="response_header"></td>
+            </tr>
+            <tr>
+                <td>Response Body</td>
+                <td id="response_body"></td>
+            </tr>
+        </table>
+    </body>
+</html>
