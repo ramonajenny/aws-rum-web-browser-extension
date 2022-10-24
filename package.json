@@ -1,10 +1,12 @@
 {
     "name": "aws-rum-web-browser-extension",
     "version": "1.10.0",
+    "browser-extension-version": "1.0",
     "sideEffects": false,
     "description": "The Amazon CloudWatch RUM web client.",
     "license": "Apache-2.0",
     "author": "Amazon CloudWatch RUM Staff <nobody@amazon.com>",
+    "author-browser-extension": "ramonajenny <ramonajenny.n@gmail.com>",
     "main": "dist/cjs/index.js",
     "module": "dist/es/index.js",
     "files": [
@@ -15,7 +17,7 @@
     ],
     "repository": {
         "type": "git",
-        "url": "https://github.com/aws-observability/aws-rum-web.git"
+        "url": "https://github.com/ramonajenny/aws-rum-web-browser-extension.git"
     },
     "scripts": {
         "server": "webpack-dev-server --config webpack/webpack.dev.js",
