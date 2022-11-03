@@ -1,3 +1,21 @@
+#The key to use this package for Chrome Browser Extensions 
+
+Using AWS RUM documentation to set-up this package -
+there's only one item in the required set up that's going to prevent RUM from working with Browser Extensions, this is the domain name requirement.
+
+"Application Domain" requirement in Step 2:
+1. add your Chrome Extension Production ID followed by `.chrome`:
+
+Example: 
+CHROME_EXTENSION_PRODUCTION_ID=mfdekmmicdfiflhjkoaddhpfdiajikpk
+In the Application Domain field found on AWS RUM configuration site - type:
+`agifbijblplkbndmfjbebfdlciikkjif.chrome`
+
+I have only tested this package with a Chrome Extension but the `.chrome` doesn’t mean you need to necessarily be building in a Chrome Extension, this is just what I named the domain, looking back, I should have used something more agnostic like `.browserextension`
+
+<img width="812" alt="Screen Shot 2022-11-03 at 8 52 16 AM" src="https://user-images.githubusercontent.com/47265029/199726834-fcc5c63f-a39e-4db4-afc1-695ca9c55fc5.png">
+
+
 # Amazon CloudWatch RUM Web Client
 
 This is the CloudWatch RUM web client source code repository. It hosts a
