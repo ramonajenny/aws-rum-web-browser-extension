@@ -7,7 +7,7 @@ there's only one item in the required set up that's going to prevent RUM from wo
 1. add your Chrome Extension Production ID followed by `.chrome`:
 
 Example: 
-CHROME_EXTENSION_PRODUCTION_ID=mfdekmmicdfiflhjkoaddhpfdiajikpk
+CHROME_EXTENSION_PRODUCTION_ID=agifbijblplkbndmfjbebfdlciikkjif
 In the Application Domain field found on AWS RUM configuration site - type:
 `agifbijblplkbndmfjbebfdlciikkjif.chrome`
 
